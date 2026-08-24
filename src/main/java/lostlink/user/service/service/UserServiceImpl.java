@@ -1,18 +1,22 @@
 package lostlink.user.service.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lostlink.user.service.dto.LoginRequest;
 import lostlink.user.service.dto.UserRequest;
 import lostlink.user.service.dto.UserResponse;
 import lostlink.user.service.entity.User;
 import lostlink.user.service.exception.UserNotFoundException;
 import lostlink.user.service.repository.UserRepository;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@AllArgsConstructor
-public class UserServiceImpl implements UserService{
+@Service
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
     @Override
     public UserResponse createUser(UserRequest request) {
@@ -27,6 +31,7 @@ public class UserServiceImpl implements UserService{
                 .name(request.getName())
                 .email(request.getEmail())
                 .password(request.getPassword())
+                .phone(request.getPhone()) // Added phone mapping
                 .build();
 
         User savedUser = userRepository.save(user);
@@ -110,6 +115,10 @@ public class UserServiceImpl implements UserService{
             user.setPassword(request.getPassword());
         }
 
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone()); // Added phone update logic
+        }
+
         User updatedUser = userRepository.save(user);
 
         return convertToResponse(updatedUser);
@@ -128,11 +137,14 @@ public class UserServiceImpl implements UserService{
     }
 
     private UserResponse convertToResponse(User user) {
+        String token = jwtService.generateToken(user.getEmail());
 
         return new UserResponse(
                 user.getId(),
                 user.getName(),
-                user.getEmail()
+                user.getEmail(),
+                user.getPhone(), // Include phone in response if your UserResponse DTO has it
+                token
         );
     }
 }
